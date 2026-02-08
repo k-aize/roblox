@@ -7,6 +7,7 @@ local ESPNameToggle = Instance.new("TextButton")
 local ESPTeamCheckToggle = Instance.new("TextButton")
 local CloseButton = Instance.new("TextButton")
 local UICorner = Instance.new("UICorner")
+local UserInputService = game:GetService("UserInputService")
 
 -- Properties ScreenGui
 ScreenGui.Parent = game.CoreGui
@@ -278,5 +279,14 @@ Players.PlayerRemoving:Connect(function(player)
         ESPObjects[player] = nil
     end
 end)
+
+-- [[ FITUR TOGGLE MENU (INSERT) ]] --
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    -- Cek jika tombol yang ditekan adalah INSERT dan tidak sedang ngetik di chat
+    if input.KeyCode == Enum.KeyCode.Insert and not gameProcessed then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+-- [[ AKHIR FITUR TOGGLE MENU ]] --
 
 print("ESP Menu loaded successfully!")
