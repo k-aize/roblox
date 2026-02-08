@@ -1,208 +1,282 @@
--- Roblox ESP Script dengan Keybind
--- [ = Toggle ESP Outline
--- ] = Toggle ESP Name
--- \ = Toggle ESP Team Check
+-- Buat ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local ESPOutlineToggle = Instance.new("TextButton")
+local ESPNameToggle = Instance.new("TextButton")
+local ESPTeamCheckToggle = Instance.new("TextButton")
+local CloseButton = Instance.new("TextButton")
+local UICorner = Instance.new("UICorner")
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
+-- Properties ScreenGui
+ScreenGui.Parent = game.CoreGui
+ScreenGui.Name = "ESPMenu"
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Konfigurasi ESP
-local ESPSettings = {
-    OutlineEnabled = false,
-    NameEnabled = false,
-    TeamCheck = false,
-    OutlineColor = Color3.fromRGB(255, 0, 0),
-    NameColor = Color3.fromRGB(255, 255, 255),
-    TeamColor = true, -- Gunakan warna tim
-    MaxDistance = 1000
+-- Properties MainFrame
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
+MainFrame.Size = UDim2.new(0, 300, 0, 250)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+UICorner.Parent = MainFrame
+UICorner.CornerRadius = UDim.new(0, 8)
+
+-- Properties Title
+Title.Parent = MainFrame
+Title.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+Title.BorderSizePixel = 0
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "ESP Menu"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 18
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.Parent = Title
+TitleCorner.CornerRadius = UDim.new(0, 8)
+
+-- Properties ESP Outline Toggle
+ESPOutlineToggle.Parent = MainFrame
+ESPOutlineToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+ESPOutlineToggle.BorderSizePixel = 0
+ESPOutlineToggle.Position = UDim2.new(0.1, 0, 0.25, 0)
+ESPOutlineToggle.Size = UDim2.new(0.8, 0, 0, 35)
+ESPOutlineToggle.Font = Enum.Font.Gotham
+ESPOutlineToggle.Text = "ESP Outline: OFF"
+ESPOutlineToggle.TextColor3 = Color3.fromRGB(255, 75, 75)
+ESPOutlineToggle.TextSize = 14
+
+local OutlineCorner = Instance.new("UICorner")
+OutlineCorner.Parent = ESPOutlineToggle
+OutlineCorner.CornerRadius = UDim.new(0, 6)
+
+-- Properties ESP Name Toggle
+ESPNameToggle.Parent = MainFrame
+ESPNameToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+ESPNameToggle.BorderSizePixel = 0
+ESPNameToggle.Position = UDim2.new(0.1, 0, 0.45, 0)
+ESPNameToggle.Size = UDim2.new(0.8, 0, 0, 35)
+ESPNameToggle.Font = Enum.Font.Gotham
+ESPNameToggle.Text = "ESP Name: OFF"
+ESPNameToggle.TextColor3 = Color3.fromRGB(255, 75, 75)
+ESPNameToggle.TextSize = 14
+
+local NameCorner = Instance.new("UICorner")
+NameCorner.Parent = ESPNameToggle
+NameCorner.CornerRadius = UDim.new(0, 6)
+
+-- Properties ESP Team Check Toggle
+ESPTeamCheckToggle.Parent = MainFrame
+ESPTeamCheckToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+ESPTeamCheckToggle.BorderSizePixel = 0
+ESPTeamCheckToggle.Position = UDim2.new(0.1, 0, 0.65, 0)
+ESPTeamCheckToggle.Size = UDim2.new(0.8, 0, 0, 35)
+ESPTeamCheckToggle.Font = Enum.Font.Gotham
+ESPTeamCheckToggle.Text = "Team Check: OFF"
+ESPTeamCheckToggle.TextColor3 = Color3.fromRGB(255, 75, 75)
+ESPTeamCheckToggle.TextSize = 14
+
+local TeamCorner = Instance.new("UICorner")
+TeamCorner.Parent = ESPTeamCheckToggle
+TeamCorner.CornerRadius = UDim.new(0, 6)
+
+-- Properties Close Button
+CloseButton.Parent = MainFrame
+CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseButton.BorderSizePixel = 0
+CloseButton.Position = UDim2.new(0.1, 0, 0.85, 0)
+CloseButton.Size = UDim2.new(0.8, 0, 0, 30)
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.Text = "CLOSE"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.TextSize = 14
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.Parent = CloseButton
+CloseCorner.CornerRadius = UDim.new(0, 6)
+
+-- Variables
+local ESPEnabled = {
+    Outline = false,
+    Name = false,
+    TeamCheck = false
 }
 
--- Tabel untuk menyimpan ESP objects
 local ESPObjects = {}
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
--- Fungsi untuk membuat highlight (outline)
-local function createHighlight(player)
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "ESP_Highlight"
-    highlight.FillTransparency = 1
-    highlight.OutlineTransparency = 0
-    highlight.OutlineColor = ESPSettings.OutlineColor
-    highlight.Adornee = nil
-    highlight.Parent = game.CoreGui
-    return highlight
-end
-
--- Fungsi untuk membuat name tag
-local function createNameTag(player)
-    local billboardGui = Instance.new("BillboardGui")
-    billboardGui.Name = "ESP_NameTag"
-    billboardGui.AlwaysOnTop = true
-    billboardGui.Size = UDim2.new(0, 200, 0, 50)
-    billboardGui.StudsOffset = Vector3.new(0, 3, 0)
-    billboardGui.Parent = game.CoreGui
-    
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.TextColor3 = ESPSettings.NameColor
-    textLabel.TextStrokeTransparency = 0.5
-    textLabel.Font = Enum.Font.SourceSansBold
-    textLabel.TextSize = 16
-    textLabel.Text = player.Name
-    textLabel.Parent = billboardGui
-    
-    return billboardGui, textLabel
-end
-
--- Fungsi untuk menambahkan ESP ke player
-local function addESP(player)
+-- Fungsi untuk membuat ESP
+local function CreateESP(player)
     if player == LocalPlayer then return end
     
-    local espData = {
-        Player = player,
-        Highlight = createHighlight(player),
-        NameTag = createNameTag(player)
+    local espFolder = Instance.new("Folder")
+    espFolder.Name = "ESP_" .. player.Name
+    espFolder.Parent = game.CoreGui
+    
+    ESPObjects[player] = {
+        Folder = espFolder,
+        Highlight = nil,
+        BillboardGui = nil
     }
     
-    ESPObjects[player] = espData
+    local function UpdateESP()
+        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+        
+        -- ESP Outline (Highlight)
+        if ESPEnabled.Outline then
+            if not ESPObjects[player].Highlight then
+                local highlight = Instance.new("Highlight")
+                highlight.Parent = espFolder
+                highlight.Adornee = player.Character
+                highlight.FillTransparency = 0.5
+                highlight.OutlineTransparency = 0
+                ESPObjects[player].Highlight = highlight
+            end
+            
+            -- Team Check
+            if ESPEnabled.TeamCheck and player.Team == LocalPlayer.Team then
+                ESPObjects[player].Highlight.OutlineColor = Color3.fromRGB(75, 255, 75)
+            else
+                ESPObjects[player].Highlight.OutlineColor = Color3.fromRGB(255, 75, 75)
+            end
+        elseif ESPObjects[player].Highlight then
+            ESPObjects[player].Highlight:Destroy()
+            ESPObjects[player].Highlight = nil
+        end
+        
+        -- ESP Name
+        if ESPEnabled.Name then
+            if not ESPObjects[player].BillboardGui then
+                local billboard = Instance.new("BillboardGui")
+                billboard.Parent = espFolder
+                billboard.Adornee = player.Character.HumanoidRootPart
+                billboard.Size = UDim2.new(0, 100, 0, 50)
+                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                billboard.AlwaysOnTop = true
+                
+                local textLabel = Instance.new("TextLabel")
+                textLabel.Parent = billboard
+                textLabel.BackgroundTransparency = 1
+                textLabel.Size = UDim2.new(1, 0, 1, 0)
+                textLabel.Font = Enum.Font.GothamBold
+                textLabel.TextSize = 14
+                textLabel.TextStrokeTransparency = 0.5
+                textLabel.Text = player.Name
+                
+                ESPObjects[player].BillboardGui = billboard
+            end
+            
+            -- Team Check untuk warna nama
+            if ESPEnabled.TeamCheck and player.Team == LocalPlayer.Team then
+                ESPObjects[player].BillboardGui.TextLabel.TextColor3 = Color3.fromRGB(75, 255, 75)
+            else
+                ESPObjects[player].BillboardGui.TextLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
+            end
+        elseif ESPObjects[player].BillboardGui then
+            ESPObjects[player].BillboardGui:Destroy()
+            ESPObjects[player].BillboardGui = nil
+        end
+    end
+    
+    player.CharacterAdded:Connect(function()
+        wait(0.1)
+        UpdateESP()
+    end)
+    
+    UpdateESP()
 end
 
--- Fungsi untuk menghapus ESP dari player
-local function removeESP(player)
-    if ESPObjects[player] then
-        if ESPObjects[player].Highlight then
-            ESPObjects[player].Highlight:Destroy()
+-- Fungsi untuk update semua ESP
+local function UpdateAllESP()
+    for player, espData in pairs(ESPObjects) do
+        if player and player.Character then
+            -- Hapus ESP lama
+            if espData.Highlight then
+                espData.Highlight:Destroy()
+                espData.Highlight = nil
+            end
+            if espData.BillboardGui then
+                espData.BillboardGui:Destroy()
+                espData.BillboardGui = nil
+            end
+            
+            -- Buat ESP baru dengan setting terbaru
+            CreateESP(player)
         end
-        if ESPObjects[player].NameTag then
-            ESPObjects[player].NameTag:Destroy()
+    end
+end
+
+-- Fungsi untuk hapus semua ESP
+local function RemoveAllESP()
+    for player, espData in pairs(ESPObjects) do
+        if espData.Folder then
+            espData.Folder:Destroy()
+        end
+    end
+    ESPObjects = {}
+end
+
+-- Toggle ESP Outline
+ESPOutlineToggle.MouseButton1Click:Connect(function()
+    ESPEnabled.Outline = not ESPEnabled.Outline
+    ESPOutlineToggle.Text = "ESP Outline: " .. (ESPEnabled.Outline and "ON" or "OFF")
+    ESPOutlineToggle.TextColor3 = ESPEnabled.Outline and Color3.fromRGB(75, 255, 75) or Color3.fromRGB(255, 75, 75)
+    UpdateAllESP()
+end)
+
+-- Toggle ESP Name
+ESPNameToggle.MouseButton1Click:Connect(function()
+    ESPEnabled.Name = not ESPEnabled.Name
+    ESPNameToggle.Text = "ESP Name: " .. (ESPEnabled.Name and "ON" or "OFF")
+    ESPNameToggle.TextColor3 = ESPEnabled.Name and Color3.fromRGB(75, 255, 75) or Color3.fromRGB(255, 75, 75)
+    UpdateAllESP()
+end)
+
+-- Toggle Team Check
+ESPTeamCheckToggle.MouseButton1Click:Connect(function()
+    ESPEnabled.TeamCheck = not ESPEnabled.TeamCheck
+    ESPTeamCheckToggle.Text = "Team Check: " .. (ESPEnabled.TeamCheck and "ON" or "OFF")
+    ESPTeamCheckToggle.TextColor3 = ESPEnabled.TeamCheck and Color3.fromRGB(75, 255, 75) or Color3.fromRGB(255, 75, 75)
+    UpdateAllESP()
+end)
+
+-- Close Button
+CloseButton.MouseButton1Click:Connect(function()
+    -- Matikan semua fitur
+    ESPEnabled.Outline = false
+    ESPEnabled.Name = false
+    ESPEnabled.TeamCheck = false
+    
+    -- Hapus semua ESP
+    RemoveAllESP()
+    
+    -- Hapus GUI
+    ScreenGui:Destroy()
+end)
+
+-- Inisialisasi ESP untuk semua player yang ada
+for _, player in pairs(Players:GetPlayers()) do
+    CreateESP(player)
+end
+
+-- ESP untuk player baru yang join
+Players.PlayerAdded:Connect(function(player)
+    CreateESP(player)
+end)
+
+-- Hapus ESP saat player leave
+Players.PlayerRemoving:Connect(function(player)
+    if ESPObjects[player] then
+        if ESPObjects[player].Folder then
+            ESPObjects[player].Folder:Destroy()
         end
         ESPObjects[player] = nil
     end
-end
-
--- Fungsi untuk update ESP
-local function updateESP()
-    for player, espData in pairs(ESPObjects) do
-        if player and player.Character then
-            local character = player.Character
-            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            
-            if humanoidRootPart and humanoid and humanoid.Health > 0 then
-                -- Cek jarak
-                local distance = (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")) 
-                    and (LocalPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).Magnitude 
-                    or math.huge
-                
-                -- Cek team
-                local showESP = true
-                if ESPSettings.TeamCheck and LocalPlayer.Team and player.Team then
-                    showESP = player.Team ~= LocalPlayer.Team
-                end
-                
-                if distance <= ESPSettings.MaxDistance and showESP then
-                    -- Update Highlight
-                    if espData.Highlight then
-                        espData.Highlight.Adornee = character
-                        espData.Highlight.Enabled = ESPSettings.OutlineEnabled
-                        
-                        if ESPSettings.TeamColor and player.Team then
-                            espData.Highlight.OutlineColor = player.Team.TeamColor.Color
-                        else
-                            espData.Highlight.OutlineColor = ESPSettings.OutlineColor
-                        end
-                    end
-                    
-                    -- Update NameTag
-                    if espData.NameTag then
-                        espData.NameTag.Adornee = humanoidRootPart
-                        espData.NameTag.Enabled = ESPSettings.NameEnabled
-                        
-                        if ESPSettings.TeamColor and player.Team then
-                            espData.NameTag.TextLabel.TextColor3 = player.Team.TeamColor.Color
-                        else
-                            espData.NameTag.TextLabel.TextColor3 = ESPSettings.NameColor
-                        end
-                        
-                        -- Tambahkan info jarak
-                        espData.NameTag.TextLabel.Text = player.Name .. "\n[" .. math.floor(distance) .. " studs]"
-                    end
-                else
-                    -- Sembunyikan jika terlalu jauh atau satu tim
-                    if espData.Highlight then
-                        espData.Highlight.Enabled = false
-                    end
-                    if espData.NameTag then
-                        espData.NameTag.Enabled = false
-                    end
-                end
-            else
-                -- Sembunyikan jika mati
-                if espData.Highlight then
-                    espData.Highlight.Enabled = false
-                end
-                if espData.NameTag then
-                    espData.NameTag.Enabled = false
-                end
-            end
-        end
-    end
-end
-
--- Fungsi notifikasi
-local function notify(message)
-    game.StarterGui:SetCore("SendNotification", {
-        Title = "ESP Script";
-        Text = message;
-        Duration = 3;
-    })
-end
-
--- Setup ESP untuk semua player yang ada
-for _, player in pairs(Players:GetPlayers()) do
-    addESP(player)
-end
-
--- Event ketika player baru join
-Players.PlayerAdded:Connect(function(player)
-    addESP(player)
 end)
 
--- Event ketika player leave
-Players.PlayerRemoving:Connect(function(player)
-    removeESP(player)
-end)
-
--- Update loop
-RunService.RenderStepped:Connect(function()
-    updateESP()
-end)
-
--- Keybind handling
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
-    -- [ = Toggle Outline
-    if input.KeyCode == Enum.KeyCode.LeftBracket then
-        ESPSettings.OutlineEnabled = not ESPSettings.OutlineEnabled
-        notify("ESP Outline: " .. (ESPSettings.OutlineEnabled and "ON" or "OFF"))
-    end
-    
-    -- ] = Toggle Name
-    if input.KeyCode == Enum.KeyCode.RightBracket then
-        ESPSettings.NameEnabled = not ESPSettings.NameEnabled
-        notify("ESP Name: " .. (ESPSettings.NameEnabled and "ON" or "OFF"))
-    end
-    
-    -- \ = Toggle Team Check
-    if input.KeyCode == Enum.KeyCode.BackSlash then
-        ESPSettings.TeamCheck = not ESPSettings.TeamCheck
-        notify("ESP Team Check: " .. (ESPSettings.TeamCheck and "ON" or "OFF"))
-    end
-end)
-
--- Notifikasi script loaded
-notify("ESP Script Loaded!\n[ = Outline | ] = Name | \\ = Team Check")
-print("ESP Script loaded successfully!")
+print("ESP Menu loaded successfully!")
