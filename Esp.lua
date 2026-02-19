@@ -4,6 +4,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
 
 -- ═══════════════════════════════════════
 --           SETTINGS
@@ -384,6 +385,15 @@ CloseBtn.MouseButton1Click:Connect(function()
     Settings.Enabled = false
     HideAll()
     ScreenGui:Destroy()
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    -- Cek apakah inputnya adalah tombol "Insert"
+    -- "not gameProcessed" memastikan menu tidak tertutup/terbuka saat Anda sedang mengetik di chat
+    if input.KeyCode == Enum.KeyCode.Insert and not gameProcessed then
+        -- Mengubah status Visible menjadi kebalikannya (True jadi False, False jadi True)
+        MainFrame.Visible = not MainFrame.Visible
+    end
 end)
 
 -- ═══════════════════════════════════════
