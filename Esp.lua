@@ -387,11 +387,12 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
+-- ═══════════════════════════════════════
+--         HIDE MENU
+-- ═══════════════════════════════════════
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    -- Cek apakah inputnya adalah tombol "Insert"
-    -- "not gameProcessed" memastikan menu tidak tertutup/terbuka saat Anda sedang mengetik di chat
     if input.KeyCode == Enum.KeyCode.Insert and not gameProcessed then
-        -- Mengubah status Visible menjadi kebalikannya (True jadi False, False jadi True)
         MainFrame.Visible = not MainFrame.Visible
     end
 end)
