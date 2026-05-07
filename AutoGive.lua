@@ -1094,7 +1094,33 @@ local function doAutoAccept()
                     
                     -- Tunggu konfirmasi trade completed
                     setAcceptStatus("Waiting for completion...", Color3.fromRGB(200, 160, 60))
-                    local timeout = tick() + 3 -- maksimal tunggu 5 detik sebelum reset loop
+                    local timeout = tick() + 3 -- maksimal tunggu 3 detik sebelum reset loop
+                    local success = false
+                    
+                    while autoAcceptEnabled and tick() < timeout do
+                        local topNotif = pGui:FindFirstChild("Top_Notification")
+                        if topNotif and topNotif:FindFirstChild("Frame") then
+                            
+                            -- Melakukan loop untuk mengecek SEMUA children Notification_UI yang ada
+                            for _, child in ipairs(topNotif.Frame:GetChildren()) do
+                                if child.Name == "Notification_UI" and child:GetAttribute("OG") == "Trade completed!" then
+                                    success = true
+                                    break
+                                end
+                            end
+                            
+                        end
+                        if success then break end
+                        task.wait(0.1)
+                    end
+                    
+                    if success then
+                        setAcceptStatus("Trade Completed!", Color3.fromRGB(100, 220, 140))
+                        task.wait(0.1) -- Beri waktu sebentar sebelum menerima gift yang selanjutnya
+                    else
+                        setAcceptStatus("Timeout waiting for completion.", Color3.fromRGB(220, 80, 80))
+                        task.wait(0.1)
+                    end
                 end
             end
         end
