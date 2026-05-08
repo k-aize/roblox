@@ -1,5 +1,5 @@
--- Auto Give Pet Script (FIXED & ADDED AUTO ACCEPT + DESTROY MENU)
--- UI: Toggle Menu, Dropdown + Search Multi-Select Pets, Select Player, Weight/Age Threshold Filter, Auto Accept, Close Script
+-- Auto Give Pet Script (FIXED & ADDED AUTO ACCEPT)
+-- UI: Toggle Menu, Dropdown + Search Multi-Select Pets, Select Player, Weight/Age Threshold Filter
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -904,27 +904,6 @@ local acceptStartStopCorner = Instance.new("UICorner")
 acceptStartStopCorner.CornerRadius = UDim.new(0, 6)
 acceptStartStopCorner.Parent = acceptStartStopBtn
 
--- ========== SECTION: DESTROY GUI / CLOSE ALL ==========
-sectionLabel("DANGER ZONE", 16)
-
-local destroyContainer = createContainer(17, 44)
-
-local destroyBtn = Instance.new("TextButton")
-destroyBtn.Size = UDim2.new(1, -20, 0, 34)
-destroyBtn.Position = UDim2.new(0, 10, 0, 5)
-destroyBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-destroyBtn.BorderSizePixel = 0
-destroyBtn.Text = "✖  Close Menu & Stop All"
-destroyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-destroyBtn.TextSize = 14
-destroyBtn.Font = Enum.Font.GothamBold
-destroyBtn.Parent = destroyContainer
-
-local destroyCorner = Instance.new("UICorner")
-destroyCorner.CornerRadius = UDim.new(0, 6)
-destroyCorner.Parent = destroyBtn
-
-
 -- ========== CORE LOGIC: AUTO GIVE ==========
 
 local function parsePetName(item)
@@ -1094,32 +1073,29 @@ local function doAutoAccept()
                     
                     -- Tunggu konfirmasi trade completed
                     setAcceptStatus("Waiting for completion...", Color3.fromRGB(200, 160, 60))
-                    local timeout = tick() + 3 -- maksimal tunggu 3 detik sebelum reset loop
+                    local timeout = tick() + 15 -- maksimal tunggu 15 detik sebelum reset loop
                     local success = false
                     
                     while autoAcceptEnabled and tick() < timeout do
                         local topNotif = pGui:FindFirstChild("Top_Notification")
                         if topNotif and topNotif:FindFirstChild("Frame") then
+                            local notifUI = topNotif.Frame:FindFirstChild("Notification_UI")
                             
-                            -- Melakukan loop untuk mengecek SEMUA children Notification_UI yang ada
-                            for _, child in ipairs(topNotif.Frame:GetChildren()) do
-                                if child.Name == "Notification_UI" and child:GetAttribute("OG") == "Trade completed!" then
-                                    success = true
-                                    break
-                                end
+                            -- Pengecekan atribut "OG"
+                            if notifUI and notifUI:GetAttribute("OG") == "Trade completed!" then
+                                success = true
+                                break
                             end
-                            
                         end
-                        if success then break end
-                        task.wait(0.1)
+                        task.wait(0.2)
                     end
                     
                     if success then
                         setAcceptStatus("Trade Completed!", Color3.fromRGB(100, 220, 140))
-                        task.wait(0.1) -- Beri waktu sebentar sebelum menerima gift yang selanjutnya
+                        task.wait(1.5) -- Beri waktu sebentar sebelum menerima gift yang selanjutnya
                     else
                         setAcceptStatus("Timeout waiting for completion.", Color3.fromRGB(220, 80, 80))
-                        task.wait(0.1)
+                        task.wait(1)
                     end
                 end
             end
@@ -1153,30 +1129,6 @@ acceptStartStopBtn.MouseButton1Click:Connect(function()
         end)
     end
 end)
-
--- LOGIC UNTUK TOMBOL CLOSE SCRIPT 
-destroyBtn.MouseButton1Click:Connect(function()
-    -- Mematikan Auto Give
-    autoGiveEnabled = false
-    if autoGiveThread then
-        task.cancel(autoGiveThread)
-        autoGiveThread = nil
-    end
-
-    -- Mematikan Auto Accept
-    autoAcceptEnabled = false
-    if autoAcceptThread then
-        task.cancel(autoAcceptThread)
-        autoAcceptThread = nil
-    end
-
-    -- Menghancurkan UI dari layar
-    if screenGui then
-        screenGui:Destroy()
-    end
-    print("[AutoGivePet] Script completely closed & features stopped.")
-end)
-
 
 -- ========== CANVAS SIZE AUTO UPDATE ==========
 listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
