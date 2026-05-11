@@ -1073,7 +1073,7 @@ local function doAutoAccept()
                     
                     -- Tunggu konfirmasi trade completed
                     setAcceptStatus("Waiting for completion...", Color3.fromRGB(200, 160, 60))
-                    local timeout = tick() + 1 -- maksimal tunggu 15 detik sebelum reset loop
+                    local timeout = tick() + 0.1 -- maksimal tunggu 15 detik sebelum reset loop
                     local success = false
                     
                     while autoAcceptEnabled and tick() < timeout do
