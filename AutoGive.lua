@@ -1444,16 +1444,9 @@ local function setGiveStatus(msg, color)
 end
 
 local function doAutoGive()
-    if not selectedPlayer then
-        setGiveStatus("No player selected!", Color3.fromRGB(220, 80, 80))
-        return
-    end
-
+    if not selectedPlayer then return end
     local targetPlayer = Players:FindFirstChild(selectedPlayer)
-    if not targetPlayer then
-        setGiveStatus("Player not found: " .. selectedPlayer, Color3.fromRGB(220, 80, 80))
-        return
-    end
+    if not targetPlayer then return end
 
     local selectedBasePetNames = {}
     for petEntry, isSelected in pairs(selectedPets) do
@@ -1462,42 +1455,60 @@ local function doAutoGive()
             selectedBasePetNames[baseName] = true
         end
     end
+    if next(selectedBasePetNames) == nil then return end
 
-    if next(selectedBasePetNames) == nil then
-        setGiveStatus("No pets selected!", Color3.fromRGB(220, 80, 80))
-        return
-    end
-
-    local backpack = LocalPlayer.Backpack
-    local given = 0
-
-    for _, item in ipairs(backpack:GetChildren()) do
-        if item:IsA("Tool") then
-            local baseName, weight, age = parsePetName(item)
-            local isMatch = selectedBasePetNames[baseName]
-            if not isMatch then
-                for selectedPet, _ in pairs(selectedBasePetNames) do
-                    if string.find(string.lower(baseName), string.lower(selectedPet), 1, true) then
-                        isMatch = true
-                        break
+    -- Ambil snapshot backpack SEBELUM loop, lalu proses satu per satu
+    -- Setelah EquipTool, pet pindah ke Character sehingga kita perlu
+    -- mengambil ulang list backpack setiap akan memproses item berikutnya.
+    local function getMatchingItems()
+        local results = {}
+        local backpack = LocalPlayer.Backpack
+        for _, item in ipairs(backpack:GetChildren()) do
+            if item:IsA("Tool") then
+                local baseName, weight, age = parsePetName(item)
+                local isMatch = selectedBasePetNames[baseName]
+                if not isMatch then
+                    for selectedPet, _ in pairs(selectedBasePetNames) do
+                        if string.find(string.lower(baseName), string.lower(selectedPet), 1, true) then
+                            isMatch = true
+                            break
+                        end
                     end
                 end
+                if isMatch and passesThreshold(weight, age) then
+                    table.insert(results, item)
+                end
             end
+        end
+        return results
+    end
 
-            if isMatch and passesThreshold(weight, age) then
-                LocalPlayer.Character.Humanoid:EquipTool(item)
-                task.wait(0.2)
-                local args = {[1] = "GivePet", [2] = targetPlayer}
-                remote:FireServer(unpack(args))
-                given = given + 1
-                setGiveStatus(string.format("Gave %s to %s (%d given)", baseName, selectedPlayer, given), Color3.fromRGB(100, 220, 140))
+    -- Loop sampai tidak ada lagi item yang cocok di backpack
+    while autoGiveEnabled do
+        local items = getMatchingItems()
+        if #items == 0 then break end
+
+        local item = items[1] -- ambil satu per satu agar backpack selalu fresh
+        -- Pastikan item masih valid dan masih di Backpack (belum berpindah)
+        if not item or not item.Parent or item.Parent ~= LocalPlayer.Backpack then
+            task.wait(0.3)
+            -- coba lagi di iterasi berikutnya
+        else
+            local ok, err = pcall(function()
+                local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid:EquipTool(item)
+                    task.wait(0.3) -- beri waktu game memproses equip
+                    local args = {[1] = "GivePet", [2] = targetPlayer}
+                    remote:FireServer(unpack(args))
+                    task.wait(0.6) -- beri waktu server memproses give
+                end
+            end)
+            if not ok then
+                warn("[AutoGivePet] Error saat give pet: " .. tostring(err))
                 task.wait(0.5)
             end
         end
-    end
-
-    if given == 0 then
-        setGiveStatus("No matching pets found in backpack.", Color3.fromRGB(200, 160, 60))
     end
 end
 
@@ -1518,7 +1529,13 @@ startStopBtn.MouseButton1Click:Connect(function()
         setGiveStatus("Running...", Color3.fromRGB(100, 220, 140))
         autoGiveThread = task.spawn(function()
             while autoGiveEnabled do
-                doAutoGive()
+                -- doAutoGive sudah looping sendiri sampai backpack kosong
+                -- Outer loop ini hanya menunggu item baru masuk ke backpack
+                local ok, err = pcall(doAutoGive)
+                if not ok then
+                    warn("[AutoGivePet] doAutoGive error: " .. tostring(err))
+                end
+                -- Jeda sebelum scan ulang backpack (tunggu pet baru masuk)
                 task.wait(1)
             end
         end)
